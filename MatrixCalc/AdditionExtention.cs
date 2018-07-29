@@ -6,8 +6,20 @@ using System.Threading.Tasks;
 
 namespace MatrixCalc
 {
+    /// <summary>
+    /// Add Addtition Operation to Matrix
+    /// </summary>
     public static class AdditionExtention
     {
+        /// <summary>
+        /// Adds the specified RHS.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <param name="addition">The addition.</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         public static Matrix<T> Add<T>(this Matrix<T> lhs, Matrix<T> rhs, Func<T, T, T> addition)
         {
             if (!(lhs.Ncolomns == rhs.Ncolomns) || !(lhs.Nrows == rhs.Nrows))

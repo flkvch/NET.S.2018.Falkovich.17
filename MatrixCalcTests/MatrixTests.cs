@@ -1,17 +1,22 @@
 ﻿using NUnit.Framework;
-using MatrixCalc;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MatrixCalc.Tests
 {
-    [TestFixture()]
+    [TestFixture]
     public class MatrixTests
     {
-        int[,] array = new int[,]
+        private int[,] array0 = new int[,]
+           {
+                { 1, 0, 0, 7, 3 },
+                { 0, 2, 0, 8, 4 },
+                { 0, 0, 3, 0, 1 },
+                { 0, 8, 0, 5, 8 },
+                { 0, 1, 0, 5, 7 },
+                { 0, 1, 0, 5, 7 }
+           };
+
+        private int[,] array = new int[,]
             {
                 { 1, 0, 0, 7, 3 },
                 { 0, 2, 0, 8, 4 },
@@ -20,16 +25,14 @@ namespace MatrixCalc.Tests
                 { 0, 1, 0, 5, 7 }
             };
 
-        int[,] array2 = new int[,]
+        private int[,] array2 = new int[,]
         {
-                { 1, 0, 0, 7 },
-                { 0, 2, 0, 8 },
-                { 0, 0, 3, 0},
-                { 0, 8, 0, 5},
-                { 0, 1, 0, 5 }
+                { 1, 0, 0},
+                { 0, 2, 0 },
+                { 0, 0, 3}
         };
 
-        int[,] array3 = new int[,]
+        private int[,] array3 = new int[,]
         {
                 { 10, 0, 0, 0, 0 },
                 {  0, 5, 0, 0, 0 },
@@ -38,7 +41,7 @@ namespace MatrixCalc.Tests
                 { 0, 0, 0, 0, 12 }
         };
 
-        int[,] array4 = new int[,]
+        private int[,] array4 = new int[,]
         {
                 { 1, 0, 2, 0, 0 },
                 {  0, 1, 0, 5, 0 },
@@ -48,7 +51,7 @@ namespace MatrixCalc.Tests
         };
 
 
-        int[,] array5 = new int[,]
+        private int[,] array5 = new int[,]
         {
                 { 2, 0, 2, 7, 3 },
                 {  0, 3, 0, 13, 4 },
@@ -57,32 +60,50 @@ namespace MatrixCalc.Tests
                 { 0, 1, 0, 15, 8 }
         };
 
-        string[,] notSquareStringArray = new string[,]
-{
+
+        private int[,] array6 = new int[,]
+        {
+                { 2, 0, 4, 0, 0 },
+                {  0, 2, 0, 10, 0 },
+                {  4, 0, 2, 0, 0 },
+                {  0, 10, 0, 2, 20 },
+                { 0, 0, 0, 20, 2 }
+        };
+
+
+        private string[,] notSquareStringArray = new string[,]
+            {
             {"a", null, "d", null },
             {null, "b",  null, null },
             {"d", null, "c" , null}
-};
+            };
 
-        string[,] diagonalStringArray = new string[,]
+        private string[,] diagonalStringArray = new string[,]
         {
             {"a", null, "y" },
             {null, "b",  null },
             {null, null, "c" }
         };
 
-        string[,] simmetricStringArray = new string[,]
+        private string[,] simmetricStringArray = new string[,]
         {
             {"a", null, "d" },
             {null, "b",  null },
             {"d", "u", "c" }
         };
 
-        string[,] additionArray = new string[,]
+        private double[,] darray = new double[,]
         {
-            {"aa", null, "dy" },
-            {null, "bb",  null },
-            {"d", "u", "cc" }
+                { 1.2, 0, 0},
+                { 0, 2.2, 8.2 },
+                { 0, 8.2, 3.5}
+         };
+
+        private double[,] darray2 = new double[,]
+        {
+                { 2.4, 0, 0},
+                { 0, 4.4, 16.4 },
+                { 0, 16.4, 7}
         };
 
         [Test]
@@ -90,7 +111,7 @@ namespace MatrixCalc.Tests
         {
             Matrix<int> matrix;
             Matrix<string> matrixString;
-            Assert.Throws<ArgumentException>(() => matrix = new SquareMatrix<int>(array2));
+            Assert.Throws<ArgumentException>(() => matrix = new SquareMatrix<int>(array0));
             Assert.Throws<ArgumentException>(() => matrixString = new SquareMatrix<string>(notSquareStringArray));
         }
 
@@ -103,7 +124,6 @@ namespace MatrixCalc.Tests
             Assert.Throws<ArgumentException>(() => matrixString = new DiagonalMatrix<string>(diagonalStringArray));
 
         }
-
         [Test]
         public void SimmetriclMatrixTest()
         {
@@ -116,25 +136,15 @@ namespace MatrixCalc.Tests
         [Test]
         public void AdditionTest()
         {
-            Assert.AreEqual(new Matrix<int>(array5), new Matrix<int>(array).Add(new Matrix<int>(array4), (x, y) => x + y));
-            Assert.AreEqual(new Matrix<string>(additionArray), new Matrix<string>(simmetricStringArray).Add(new Matrix<string>(diagonalStringArray), StringAdd));
+            Assert.AreEqual(new SquareMatrix<int>(array5), new SquareMatrix<int>(array).Add(new SimmetricMatrix<int>(array4)));
+            Assert.AreEqual(new SimmetricMatrix<int>(array6), new SimmetricMatrix<int>(array4).Add(new SimmetricMatrix<int>(array4)));
+            Assert.AreEqual(new SimmetricMatrix<double>(darray2), new SimmetricMatrix<double>(darray).Add(new SimmetricMatrix<double>(darray)));
         }
 
         [Test]
         public void AdditionFailTest()
         {
-            Assert.Throws<InvalidOperationException>(() => new Matrix<int>(array2).Add(new Matrix<int>(array4), (x, y) => x + y));
+            Assert.Throws<InvalidOperationException>(() => new SquareMatrix<int>(array2).Add(new SquareMatrix<int>(array4)));
         }
-
-        private string StringAdd (string lhs, string rhs)
-        {
-            if (lhs == null && rhs == null)
-            {
-                return null;
-            }
-
-            return lhs + rhs;
-        }
-
     }
 }

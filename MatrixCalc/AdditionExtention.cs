@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace MatrixCalc
 {
@@ -20,23 +17,51 @@ namespace MatrixCalc
         /// <param name="addition">The addition.</param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public static Matrix<T> Add<T>(this Matrix<T> lhs, Matrix<T> rhs, Func<T, T, T> addition)
+        public static Matrix<T> Add<T>(this Matrix<T> lhs, Matrix<T> rhs)
         {
-            if (!(lhs.Ncolomns == rhs.Ncolomns) || !(lhs.Nrows == rhs.Nrows))
+            if (lhs == null || rhs == null)
+            {
+                throw new ArgumentNullException($"{nameof(lhs)} and {nameof(rhs)} can't be null");
+            }
+
+            if (lhs.Size != rhs.Size)
             {
                 throw new InvalidOperationException($"Cant't add \n{lhs} \nto \n{rhs}: matrises have different sizes.");
             }
 
-            T[,] array = new T[rhs.Nrows, rhs.Ncolomns];
-            for (int i = 0; i < rhs.Nrows; i++)
+            T[,] array = new T[rhs.Size, rhs.Size];
+            for (int i = 0; i < rhs.Size; i++)
             {
-                for (int j = 0; j < rhs.Ncolomns; j++)
+                for (int j = 0; j < rhs.Size; j++)
                 {
-                    array[i, j] = addition(lhs[i, j], rhs[i, j]);
+                    array[i, j] = AddFunc(lhs[i, j], rhs[i, j]);
                 }
             }
 
-            return new Matrix<T>(array);
+            if (lhs.GetType() == typeof(SimmetricMatrix<T>) || rhs.GetType() == typeof(SimmetricMatrix<T>))
+            {
+                if (lhs.GetType() != typeof(SquareMatrix<T>) && rhs.GetType() != typeof(SquareMatrix<T>))
+                {
+                    return new SimmetricMatrix<T>(array);
+                }
+            }
+
+            if (lhs.GetType() == typeof(DiagonalMatrix<T>) && rhs.GetType() == typeof(DiagonalMatrix<T>))
+            {
+                return new DiagonalMatrix<T>(array);
+            }
+
+            return new SquareMatrix<T>(array);
+        }
+
+        private static T AddFunc<T>(T lhs, T rhs)
+        {
+            ParameterExpression plhs = Expression.Parameter(typeof(T), "lhs");
+            ParameterExpression prhs = Expression.Parameter(typeof(T), "rhs");
+
+            Func<T, T, T> add = Expression.Lambda<Func<T, T, T>>(Expression.Add(plhs, prhs), plhs, prhs).Compile();
+
+            return add(lhs, rhs);
         }
     }
 }

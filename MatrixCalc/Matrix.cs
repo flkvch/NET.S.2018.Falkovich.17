@@ -1,8 +1,6 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MatrixCalc
 {
@@ -12,38 +10,11 @@ namespace MatrixCalc
     /// <typeparam name="T">
     /// Type of elemnts in matrix
     /// </typeparam>
-    public class Matrix<T>
+    public abstract class Matrix<T> : IEnumerable<T>
     {
-        private readonly T[,] array;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Matrix{T}"/> class.
-        /// </summary>
-        /// <param name="nrows">The nrows.</param>
-        /// <param name="ncolomns">The ncolomns.</param>
-        /// <exception cref="ArgumentException"></exception>
-        public Matrix(int nrows, int ncolomns)
-        {
-            if (nrows < 1 || ncolomns < 1) 
-            {
-                throw new ArgumentException($"{nrows} or {ncolomns} should be 1 or bigger.");
-            }
-
-            Nrows = nrows;
-            Ncolomns = ncolomns;
-            array = new T[Nrows, Ncolomns];
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Matrix{T}"/> class.
-        /// </summary>
-        /// <param name="array">The array.</param>
         public Matrix(T[,] array)
         {
-            Nrows = array.GetUpperBound(0) + 1;
-            Ncolomns = array.Length / Nrows;
             IsValidArray(array);
-            this.array = array;
         }
 
         /// <summary>
@@ -51,21 +22,7 @@ namespace MatrixCalc
         /// </summary>
         public event EventHandler<ElementChangeEventArgs<T>> ElementChange;
 
-        /// <summary>
-        /// Gets the number of rows.
-        /// </summary>
-        /// <value>
-        /// The nrows.
-        /// </value>
-        public int Nrows { get; }
-
-        /// <summary>
-        /// Gets the number of colomns.
-        /// </summary>
-        /// <value>
-        /// The ncolomns.
-        /// </value>
-        public int Ncolomns { get; }
+        public int Size { get; protected set;  }
 
         #region Indexer        
         /// <summary>
@@ -83,27 +40,31 @@ namespace MatrixCalc
         {
             get
             {
-                if (i >= Nrows && j >= Ncolomns)
+                if (i >= Size || j >= Size || i < 0 || j < 0)
                 {
                     throw new IndexOutOfRangeException();
                 }
 
-                return array[i, j];
+                return GetValue(i, j);
             }
 
             set
             {
-                if (i >= Nrows && j >= Ncolomns)
+                if (i >= Size || j >= Size || i < 0 || j < 0)
                 {
                     throw new IndexOutOfRangeException();
                 }
 
-                T elementWas = array[i, j];
-                array[i, j] = value;
+                T elementWas = GetValue(i, j);
+                SetValue(value, i, j);
 
                 OnElementChange(this, new ElementChangeEventArgs<T>(i, j, elementWas, value));
             }
         }
+
+        protected abstract T GetValue(int i, int j);
+
+        protected abstract void SetValue(T value, int i, int j);
         #endregion
 
         #region Event        
@@ -118,11 +79,14 @@ namespace MatrixCalc
         }
         #endregion
 
+        #region Validation of array???
         private void IsValidArray(T[,] array)
         {
+            int nrows = array.GetUpperBound(0) + 1;
+            int ncolomns = array.Length / (array.GetUpperBound(0) + 1);
             if (GetType() == typeof(SquareMatrix<T>))
             {
-                if (Nrows != Ncolomns)
+                if (nrows != ncolomns)
                 {
                     throw new ArgumentException($"Can't build matrix form {array}.", nameof(array));
                 }
@@ -130,14 +94,14 @@ namespace MatrixCalc
 
             if (GetType() == typeof(SimmetricMatrix<T>))
             {
-                if (Nrows != Ncolomns)
+                if (nrows != ncolomns)
                 {
                     throw new ArgumentException($"Can't build matrix form {array}.", nameof(array));
                 }
 
-                for (int i = 0; i < Nrows; i++)
+                for (int i = 0; i < nrows; i++)
                 {
-                    for (int j = i; j < Nrows; j++)
+                    for (int j = i; j < nrows; j++)
                     {
                         if (!Equals(array[i, j], array[j, i]))
                         {
@@ -149,16 +113,16 @@ namespace MatrixCalc
 
             if (GetType() == typeof(DiagonalMatrix<T>))
             {
-                if (Nrows != Ncolomns)
+                if (nrows != ncolomns)
                 {
                     throw new ArgumentException($"Can't build matrix form {array}.", nameof(array));
                 }
 
-                for (int i = 0; i < Nrows; i++)
+                for (int i = 0; i < nrows; i++)
                 {
-                    for (int j = i + 1; j < Nrows; j++)
+                    for (int j = i + 1; j < nrows; j++)
                     {
-                        if (!(Equals(default(T), array[i, j])) || !Equals(default(T), array[j, i]))
+                        if (!Equals(default(T), array[i, j]) || !Equals(default(T), array[j, i]))
                         {
                             throw new ArgumentException($"Can't build diagonal matrix form {array}.", nameof(array));
                         }
@@ -166,6 +130,7 @@ namespace MatrixCalc
                 }
             }
         }
+        #endregion
 
         #region Overrides Object        
         /// <summary>
@@ -177,21 +142,21 @@ namespace MatrixCalc
         public override string ToString()
         {
             string result = string.Empty;
-            for (int i = 0; i < Nrows; i++)
+            for (int i = 0; i < Size; i++)
             {
-                for (int j = 0; j < Ncolomns; j++)
+                for (int j = 0; j < Size; j++)
                 {
-                    if (array[i, j] == null)
+                    if (this[i, j] == null)
                     {
                         result += "null" + " ";
                     }
                     else
                     {
-                        result += array[i, j].ToString() + " ";
+                        result += this[i, j].ToString() + " ";
                     }
                 }
 
-                if (i != Nrows - 1) 
+                if (i != Size - 1)
                 {
                     result += "\n";
                 }
@@ -209,27 +174,28 @@ namespace MatrixCalc
         /// </returns>
         public override bool Equals(object obj)
         {
-            if (obj == null) 
+            if (obj == null)
             {
                 return false;
             }
 
             Matrix<T> matrix = obj as Matrix<T>;
+
             if (matrix == null)
             {
                 return false;
             }
 
-            if (Nrows != matrix.Nrows || Ncolomns != matrix.Ncolomns) 
+            if (Size != matrix.Size)
             {
                 return false;
             }
 
-            for (int i = 0; i < Nrows; i++) 
+            for (int i = 0; i < Size; i++)
             {
-                for (int j = 0; j < Ncolomns; j++)
+                for (int j = 0; j < Size; j++)
                 {
-                    if (!Equals(matrix.array[i, j], array[i, j]))
+                    if (!Equals(matrix[i, j], this[i, j]))
                     {
                         return false;
                     }
@@ -248,15 +214,45 @@ namespace MatrixCalc
         public override int GetHashCode()
         {
             int result = 0;
-            for (int i = 0; i < Nrows; i++)
+            for (int i = 0; i < Size; i++)
             {
-                for (int j = 0; j < Ncolomns; j++)
+                for (int j = 0; j < Size; j++)
                 {
-                    result += array[i, j].GetHashCode() * i * j;
+                    result += this[i, j].GetHashCode() * i * j;
                 }
             }
 
             return result;
+        }
+        #endregion
+
+        #region IEnumerable
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        /// <returns>
+        /// An enumerator that can be used to iterate through the collection.
+        /// </returns>
+        public IEnumerator<T> GetEnumerator()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                for (int j = 0; j < Size; j++)
+                {
+                    yield return this[i, j];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns an enumerator that iterates through a collection.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.
+        /// </returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
         #endregion
     }
